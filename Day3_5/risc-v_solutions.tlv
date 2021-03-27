@@ -61,12 +61,21 @@
                       $is_b_instr ? {{19{$instr[31]}}, {2{$instr[7]}}, $instr[30:25], $instr[11:8]} :
                       $is_u_instr ? { $instr[31], $instr[30:12]}:
                       $is_j_instr ? {{12{$instr[31]}}, $instr[19:12], {2{$instr[20]}}, $instr[30:12]} : 0 ;
-         
-         $funct7[5:0] = $instr[31:25];
-         $rs2[4:0] = $instr[24:20];
-         $rs1[4:0] = $instr[19:15];
-         $funct3[2:0] = $instr[14:12];
-         $rd[4:0] = $instr[11:7];
+         $funct7_valid = $is_r_instr ;
+         ?$funct7_valid
+            $funct7[5:0] = $instr[31:25];
+         $rs2_valid = $is_r_instr || $is_s_instr || $is_b_instr ;
+         ?$rs2_valid
+            $rs2[4:0] = $instr[24:20];
+         $rs1_valid = $is_r_instr || $is_s_instr || $is_b_instr || $is_i_instr ;
+         ?$rs1_valid
+            $rs1[4:0] = $instr[19:15];
+         $funct3_valid = $is_r_instr || $is_s_instr || $is_b_instr || $is_i_instr ;
+         ?$funct3_valid
+            $funct3[2:0] = $instr[14:12];
+         $rd_valid = $is_r_instr || $is_u_instr || $is_j_instr || $is_i_instr ;
+         ?$rd_valid
+            $rd[4:0] = $instr[11:7];
          $opcode[6:0] = $instr[6:0];
          
 
@@ -91,18 +100,11 @@
    //  o CPU visualization
    |cpu
       m4+imem(@1)
-      
-      
-      
-     
-     
-     
-     
-     // Args: (read stage)
+      // Args: (read stage)
       //m4+rf(@1, @1)  // Args: (read stage, write stage) - if equal, no register bypass is required
       //m4+dmem(@4)    // Args: (read/write stage)
    
-   //m4+cpu_viz(@4)    // For visualisation, argument should be at least equal to the last stage of CPU logic
+   m4+cpu_viz(@4)    // For visualisation, argument should be at least equal to the last stage of CPU logic
                        // @4 would work for all labs
 \SV
    endmodule
