@@ -62,7 +62,13 @@
                       $is_u_instr ? { $instr[31], $instr[30:12]}:
                       $is_j_instr ? {{12{$instr[31]}}, $instr[19:12], {2{$instr[20]}}, $instr[30:12]} : 0 ;
          
-
+         $funct7[5:0] = $instr[31:25];
+         $rs2[4:0] = $instr[24:20];
+         $rs1[4:0] = $instr[19:15];
+         $funct3[2:0] = $instr[14:12];
+         $rd[4:0] = $instr[11:7];
+         $opcode[6:0] = $instr[6:0];
+         
 
     
 
