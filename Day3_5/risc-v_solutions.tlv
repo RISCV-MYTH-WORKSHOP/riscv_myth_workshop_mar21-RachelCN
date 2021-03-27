@@ -44,7 +44,23 @@
       @1
          $imem_rd_en = ! $reset;
          $imem_rd_addr[3-1:0] = $pc[3+1:2]; 
-         $instr = $imem_rd_data;
+         $instr[31:0] = $imem_rd_data;
+         $is_i_instr = $instr[6:2] ==? 5'b0000x||
+                       $instr[6:2] ==? 5'b001x0||
+                       $instr[6:2] ==? 5'b11001;
+         $is_u_instr = $instr[6:2] ==? 5'b0x101;
+         $is_s_instr = $instr[6:2] ==? 5'b0100x;
+         $is_r_instr = $instr[6:2] ==? 5'b011x0||
+                       $instr[6:2] ==? 5'b01011||
+                       $instr[6:2] ==? 5'b10100;
+         $is_b_instr = $instr[6:2] ==? 5'b11000;
+         $is_j_instr = $instr[6:2] ==? 5'b11011;
+         
+         $imm[31:0] = $is_i_instr ? {{21{$instr[31] }}, $instr[30:20]}:
+                      $is_s_instr ? {{21{$instr[31]}}, $instr[30:25], $instr[11:8], $instr[7]}:
+                      $is_b_instr ? {{19{$instr[31]}}, {2{$instr[7]}}, $instr[30:25], $instr[11:8]} :
+                      $is_u_instr ? { $instr[31], $instr[30:12]}:
+                      $is_j_instr ? {{12{$instr[31]}}, $instr[19:12], {2{$instr[20]}}, $instr[30:12]} : 0 ;
          
 
 
@@ -70,11 +86,17 @@
    |cpu
       m4+imem(@1)
       
-       // Args: (read stage)
+      
+      
+     
+     
+     
+     
+     // Args: (read stage)
       //m4+rf(@1, @1)  // Args: (read stage, write stage) - if equal, no register bypass is required
       //m4+dmem(@4)    // Args: (read/write stage)
    
-   m4+cpu_viz(@4)    // For visualisation, argument should be at least equal to the last stage of CPU logic
+   //m4+cpu_viz(@4)    // For visualisation, argument should be at least equal to the last stage of CPU logic
                        // @4 would work for all labs
 \SV
    endmodule
