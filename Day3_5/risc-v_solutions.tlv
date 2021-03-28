@@ -86,8 +86,18 @@
          $is_addi = $dec_bits ==? 11'bx_000_0010011 ;
          $is_add = $dec_bits ==? 11'bx_000_0110011 ;
          `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bgeu $is_addi $is_add)
-
-    
+         $rf_rd_index1[4:0] = $rs1 ;
+         $rf_rd_index2[4:0] = $rs2 ;
+         $rf_rd_en1 = $rs1_valid ;
+         $rf_rd_en2 = $rs2_valid ;
+         $rf_rd_data1[31:0] = $src1_value[31:0]; 
+         $rf_rd_data2[31:0] = $src2_value[31:0];
+         
+         $result[31:0] = $is_addi ? $src1_value + $imm : $is_add ? $src1_value + $src2_value :32'bx ;
+         $rf_wr_en = ($rd_valid || $rd !== 0 );
+         $rf_wr_index[4:0] = $rd ; 
+         $rf_wr_data[31:0] = $result ;
+         
 
          
 
@@ -109,7 +119,7 @@
    |cpu
       m4+imem(@1)
       // Args: (read stage)
-      //m4+rf(@1, @1)  // Args: (read stage, write stage) - if equal, no register bypass is required
+      m4+rf(@1, @1)  // Args: (read stage, write stage) - if equal, no register bypass is required
       //m4+dmem(@4)    // Args: (read/write stage)
    
    m4+cpu_viz(@4)    // For visualisation, argument should be at least equal to the last stage of CPU logic
