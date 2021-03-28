@@ -37,16 +37,24 @@
    // m4_asm(JAL, r7, 00000000000000000000) // Done. Jump to itself (infinite loop). (Up to 20-bit signed immediate plus implicit 0 bit (unlike JALR) provides byte address; last immediate bit should also be 0)
    m4_define_hier(['M4_IMEM'], M4_NUM_INSTRS)
 
-   |cpu
+
+  
+  |cpu
       @0
+       //Program counter logic
+         
          $reset = *reset;
          $pc[31:0] = >>1$reset ? 0: 
                      >>1$taken_br ? >>1$br_tgt_pc[31:0] :
                      (>>1$pc[31:0] + 4);
       @1
+      //Fetch logic
          $imem_rd_en = !$reset;
          $imem_rd_addr[3-1:0] = $pc[3+1:2]; 
          $instr[31:0] = $imem_rd_data[31:0];
+         
+         
+      //instruction types logic   
          $is_i_instr = $instr[6:2] ==? 5'b0000x||
                        $instr[6:2] ==? 5'b001x0||
                        $instr[6:2] ==? 5'b11001;
@@ -58,11 +66,15 @@
          $is_b_instr = $instr[6:2] ==? 5'b11000;
          $is_j_instr = $instr[6:2] ==? 5'b11011;
          
+         
+      //instruction immediate decode   
          $imm[31:0] = $is_i_instr ? {{21{$instr[31] }}, $instr[30:20]}:
                       $is_s_instr ? {{21{$instr[31]}}, $instr[30:25], $instr[11:8], $instr[7]}:
                       $is_b_instr ? {{19{$instr[31]}}, {2{$instr[7]}}, $instr[30:25], $instr[11:8],1'b0} :
                       $is_u_instr ? { $instr[31], $instr[30:12]}:
                       $is_j_instr ? {{12{$instr[31]}}, $instr[19:12], {2{$instr[20]}}, $instr[30:12] , 1'0} : 0 ;
+        
+        //instruction field decode
          $funct7_valid = $is_r_instr ;
          ?$funct7_valid
             $funct7[5:0] = $instr[31:25];
@@ -79,6 +91,10 @@
          ?$rd_valid
             $rd[4:0] = $instr[11:7];
          $opcode[6:0] = $instr[6:0];
+        
+        
+        
+        // instruction decode
          $dec_bits[10:0] = {$funct7[5], $funct3, $opcode} ;
          $is_beq = $dec_bits ==? 11'bx_000_1100011 ;
          $is_bne = $dec_bits ==? 11'bx_001_1100011 ;
@@ -89,6 +105,8 @@
          $is_addi = $dec_bits ==? 11'bx_000_0010011 ;
          $is_add = $dec_bits ==? 11'bx_000_0110011 ;
          `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bgeu $is_addi $is_add)
+        
+      //register file read  
          $rf_rd_index1[4:0] = $rs1 ;
          $rf_rd_index2[4:0] = $rs2 ;
          $rf_rd_en1 = $rs1_valid ;
@@ -96,10 +114,15 @@
          $src1_value[31:0] = $rf_rd_data1[31:0] ; 
          $src2_value[31:0] = $rf_rd_data2[31:0] ;
          
+        //ALU
          $result[31:0] = $is_addi ? $src1_value + $imm : $is_add ? $src1_value + $src2_value : 32'bx ;
+        
+        // Register file write
          $rf_wr_en = ($rd_valid && $rd != 0 );
          $rf_wr_index[4:0] = $rd ; 
          $rf_wr_data[31:0] = $result ;
+         
+        //Branches 
          $taken_br = $is_beq ? ($src1_value == $src2_value):
                      $is_bne ? ($src1_value != $src2_value):
                      $is_blt ? ($src1_value < $src2_value) ^ ($src1_value[31] != $src2_value[31]):
@@ -108,6 +131,8 @@
                      $is_bgeu ? ($src1_value >= $src2_value) : 1'0 ;
          `BOGUS_USE($taken_br)
          $br_tgt_pc[31:0] = $pc + $imm ;
+        
+        //Testbench
          *passed = |cpu/xreg[10]>>5$value == (1+2+3+4+5+6+7+8+9) ; 
 
 
